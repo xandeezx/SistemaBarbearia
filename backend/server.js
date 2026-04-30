@@ -32,7 +32,7 @@ const agendamentoSchema = new mongoose.Schema({
 const servicoSchema = new mongoose.Schema({
   nome: { type: String, required: true },
   preco: { type: Number, required: true },
-  duracao: { type: Number, required: true }, // minutos
+  duracao: { type: Number, required: true },
   descricao: String,
   ativo: { type: Boolean, default: true }
 });
@@ -40,8 +40,8 @@ const servicoSchema = new mongoose.Schema({
 const configSchema = new mongoose.Schema({
   horarioAbertura: { type: String, default: '09:00' },
   horarioFechamento: { type: String, default: '20:00' },
-  intervalo: { type: Number, default: 30 }, // minutos entre slots
-  diasFuncionamento: { type: [Number], default: [1,2,3,4,5,6] } // 0=Dom, 6=Sab
+  intervalo: { type: Number, default: 30 },
+  diasFuncionamento: { type: [Number], default: [1,2,3,4,5,6] }
 });
 
 const Agendamento = mongoose.model('Agendamento', agendamentoSchema);
@@ -65,11 +65,11 @@ app.post('/api/auth/login', async (req, res) => {
   const { usuario, senha } = req.body;
   const adminUser = process.env.ADMIN_USER || 'matheus';
   const adminPass = process.env.ADMIN_PASS || 'barbearia2024';
-  
+
   if (usuario !== adminUser || senha !== adminPass) {
     return res.status(401).json({ error: 'Credenciais inválidas' });
   }
-  
+
   const token = jwt.sign({ usuario }, process.env.JWT_SECRET || 'matheus_secret_2024', { expiresIn: '7d' });
   res.json({ token });
 });
@@ -78,11 +78,8 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/agendamento', async (req, res) => {
   try {
     const { nome, telefone, servico, data, horario } = req.body;
-    
-    // Verificar conflito de horário
     const conflito = await Agendamento.findOne({ data, horario, status: { $ne: 'cancelado' } });
     if (conflito) return res.status(409).json({ error: 'Horário já reservado' });
-    
     const agendamento = await Agendamento.create({ nome, telefone, servico, data, horario });
     res.status(201).json(agendamento);
   } catch (err) {
@@ -101,31 +98,28 @@ app.get('/api/horarios-disponiveis', async (req, res) => {
   try {
     const { data } = req.query;
     if (!data) return res.status(400).json({ error: 'Data obrigatória' });
-    
+
     let config = await Config.findOne();
     if (!config) config = new Config();
-    
-    // Gerar todos os slots
+
     const slots = [];
-    const [hAbre] = config.horarioAbertura.split(':').map(Number);
-    const [mAbre] = [parseInt(config.horarioAbertura.split(':')[1])];
-    const [hFecha] = config.horarioFechamento.split(':').map(Number);
-    const [mFecha] = [parseInt(config.horarioFechamento.split(':')[1])];
-    
+    const hAbre = parseInt(config.horarioAbertura.split(':')[0]);
+    const mAbre = parseInt(config.horarioAbertura.split(':')[1]);
+    const hFecha = parseInt(config.horarioFechamento.split(':')[0]);
+    const mFecha = parseInt(config.horarioFechamento.split(':')[1]);
+
     let cur = hAbre * 60 + mAbre;
     const fim = hFecha * 60 + mFecha;
-    
+
     while (cur < fim) {
       const h = Math.floor(cur / 60).toString().padStart(2, '0');
       const m = (cur % 60).toString().padStart(2, '0');
       slots.push(`${h}:${m}`);
       cur += config.intervalo;
     }
-    
-    // Buscar horários ocupados
+
     const ocupados = await Agendamento.find({ data, status: { $ne: 'cancelado' } }).select('horario');
     const horariosOcupados = ocupados.map(a => a.horario);
-    
     const disponiveis = slots.filter(s => !horariosOcupados.includes(s));
     res.json(disponiveis);
   } catch (err) {
@@ -179,7 +173,7 @@ app.put('/api/config', authMiddleware, async (req, res) => {
   res.json(config);
 });
 
-// ─── Seed inicial de serviços (só roda após conectar) ────────────────────────
+// ─── Seed inicial de serviços ─────────────────────────────────────────────────
 async function seedServicos() {
   try {
     const count = await Servico.countDocuments();
@@ -198,5 +192,6 @@ async function seedServicos() {
   }
 }
 
+// ─── Start Server ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🚀 Backend rodando na porta ${PORT}`));
