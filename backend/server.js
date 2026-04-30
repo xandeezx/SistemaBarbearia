@@ -12,7 +12,10 @@ app.use(express.json());
 
 // ─── MongoDB Connection ───────────────────────────────────────────────────────
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/matheus-barbearia')
-  .then(() => console.log('✅ MongoDB conectado'))
+  .then(() => {
+    console.log('✅ MongoDB conectado');
+    seedServicos();
+  })
   .catch(err => console.error('❌ Erro MongoDB:', err));
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -176,21 +179,24 @@ app.put('/api/config', authMiddleware, async (req, res) => {
   res.json(config);
 });
 
-// ─── Seed inicial de serviços ─────────────────────────────────────────────────
+// ─── Seed inicial de serviços (só roda após conectar) ────────────────────────
 async function seedServicos() {
-  const count = await Servico.countDocuments();
-  if (count === 0) {
-    await Servico.insertMany([
-      { nome: 'Corte', preco: 35, duracao: 30, descricao: 'Corte masculino completo' },
-      { nome: 'Barba', preco: 25, duracao: 30, descricao: 'Modelagem e hidratação da barba' },
-      { nome: 'Corte + Barba', preco: 55, duracao: 60, descricao: 'Combo completo corte e barba' },
-      { nome: 'Sobrancelha', preco: 15, duracao: 15, descricao: 'Design de sobrancelha' },
-      { nome: 'Pigmentação', preco: 80, duracao: 60, descricao: 'Coloração e pigmentação' },
-    ]);
-    console.log('✅ Serviços iniciais criados');
+  try {
+    const count = await Servico.countDocuments();
+    if (count === 0) {
+      await Servico.insertMany([
+        { nome: 'Corte', preco: 35, duracao: 30, descricao: 'Corte masculino completo' },
+        { nome: 'Barba', preco: 25, duracao: 30, descricao: 'Modelagem e hidratação da barba' },
+        { nome: 'Corte + Barba', preco: 55, duracao: 60, descricao: 'Combo completo corte e barba' },
+        { nome: 'Sobrancelha', preco: 15, duracao: 15, descricao: 'Design de sobrancelha' },
+        { nome: 'Pigmentação', preco: 80, duracao: 60, descricao: 'Coloração e pigmentação' },
+      ]);
+      console.log('✅ Serviços iniciais criados');
+    }
+  } catch (err) {
+    console.error('⚠️ Seed ignorado:', err.message);
   }
 }
-seedServicos();
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🚀 Backend rodando na porta ${PORT}`));
