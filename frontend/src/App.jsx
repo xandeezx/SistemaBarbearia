@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 // ─── CONFIG ──────────────────────────────────────────────────────────────────
-const API = "https://seu-backend.onrender.com/api"; // Troque pela URL do Render
-const WHATSAPP_LINK = "https://wa.me/message/2IJ2DPIUTOH4P1";
+const API = "https://sistemabarbearia-ss0a.onrender.com/api";const WHATSAPP_LINK = "https://wa.me/message/2IJ2DPIUTOH4P1";
 const INSTAGRAM = "https://instagram.com/mateusducorte.00";
 const MAPS_LINK = "https://maps.google.com/?q=Matheus+Barbearia+Recife";
 
